@@ -1,8 +1,8 @@
 {
-    "host": "62.169.26.208",
+    "host": "localhost",
     "port": 3306,
     "user": "root",
-    "password": "x#yhQh79v7NuvokG",
+    "password": "",
     "database": "srv1_account",
     "theme": "light",
     "language": "es"
