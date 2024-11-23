@@ -1,7 +1,9 @@
+# Entorno virtual
+venv/
 __pycache__/
 *.pyc
 .vscode/
-venv/
-*.pyo
-*.exe
+.DS_Store
+dist/
+build/
 *.spec

@@ -4,6 +4,7 @@ MYSQL: x#yhQh79v7NuvokG
 ip: 62.169.26.208
 
 svr1_account
+svr1_player
 
 cd /usr/home/gdb_serverfiles/main && python admin_panel.py
 
