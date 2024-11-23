@@ -1,0 +1,9 @@
+{
+    "version": "1.1.0",
+    "download_url": "https://github.com/Aosiika/Metin2_Server_Admin/releases/download/v1.1.0/Metin2_Server_Admin.exe",
+    "changelog": [
+        "Mejoras en la interfaz gráfica.",
+        "Nueva funcionalidad para gestión de personajes.",
+        "Optimizaciones de rendimiento."
+    ]
+}

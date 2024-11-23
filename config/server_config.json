@@ -1,10 +1,15 @@
 {
-    "host": "62.169.26.208",
+    "host": "localhost",
     "port": 3306,
     "user": "root",
-    "password": "x#yhQh79v7NuvokG",
+    "password": "",
     "database": "srv1_account",
     "theme": "light",
+<<<<<<< HEAD:config/server_config.json
     "language": "es",
     "version": "1.1.0"
 }
+=======
+    "language": "es"
+}
+>>>>>>> 1714e8b8d6fa2aadad1baaf51c1fe57e840799d9:server_config.json
