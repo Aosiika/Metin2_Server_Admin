@@ -1,7 +1,7 @@
 # main_qt.py
 from PyQt5 import QtWidgets
 import sys
-from gui.gui_qt import ServerAdminApp
+from gui.main_window import ServerAdminApp  # Cambiar la importación a main_window.py, donde está ServerAdminApp
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

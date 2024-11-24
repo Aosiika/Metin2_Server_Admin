@@ -1,15 +1,11 @@
 {
-    "host": "localhost",
+    "host": "62.169.26.208",
     "port": 3306,
     "user": "root",
-    "password": "",
+    "password": "x#yhQh79v7NuvokG",
     "database": "srv1_account",
     "theme": "light",
-<<<<<<< HEAD:config/server_config.json
     "language": "es",
-    "version": "1.1.0"
+    "version": "1.2.0",
+    "update_url": "https://mega.nz/file/o4ZmxQYb#pjz8kR62BRC_kGwKKSo96tfMFKzhZwEo_T8DFy-ZRkA"
 }
-=======
-    "language": "es"
-}
->>>>>>> 1714e8b8d6fa2aadad1baaf51c1fe57e840799d9:server_config.json

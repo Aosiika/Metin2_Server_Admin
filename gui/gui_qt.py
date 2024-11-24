@@ -1,22 +1,13 @@
-# gui_main.py (actualizado)
 from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.QtWidgets import QMessageBox, QInputDialog, QMainWindow, QApplication, QDialog, QTabWidget, QLabel, QPushButton, QFormLayout, QVBoxLayout, QLineEdit, QHBoxLayout, QStackedWidget, QGroupBox, QTableWidget, QTableWidgetItem, QHeaderView, QProgressDialog
+from PyQt5.QtWidgets import QMessageBox, QInputDialog, QMainWindow, QApplication, QDialog, QTabWidget, QLabel, QPushButton, QFormLayout, QVBoxLayout, QLineEdit, QHBoxLayout, QStackedWidget, QGroupBox, QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar
+from PyQt5.QtCore import QThread, pyqtSignal
 import sys
 import qtawesome as qta  # Importar qtawesome para usar íconos FontAwesome
 from backend.database import get_all_accounts, update_account_status, create_account, get_all_characters, get_server_statistics
 from backend.server_config import load_server_config, save_server_config
+from backend.update_manager import UpdateThread
 import json
-import requests
 import os
-import subprocess
-import threading  # Para descargar sin bloquear la UI
-
-def restart_app():
-    """Reinicia la aplicación"""
-    python = sys.executable
-    os.execl(python, python, *sys.argv)
-
-# Llamar a esta función cuando la descarga finaliza y el ejecutable ha sido reemplazado.
 
 # Cargar traducciones desde archivo JSON
 TRANSLATIONS_FILE = "translations.json"
@@ -31,11 +22,9 @@ class ServerAdminApp(QMainWindow):
         self.language = self.config.get("language", "es")
         self.translations = load_translations()
         self.trans = self.translations[self.language]
+        
         self.setWindowTitle(self.trans["app_title"])
         self.resize(1000, 600)
-
-        # Llamar a la función para verificar actualizaciones
-        self.check_for_updates()
 
         # Cargar configuración para el tema
         self.is_dark_mode = self.config.get("theme", "light") == "dark"
@@ -46,15 +35,17 @@ class ServerAdminApp(QMainWindow):
 
         # Menú de configuración
         config_menu = menubar.addMenu(self.trans["config_menu"])
-        config_menu.addAction(self.trans["server_config_menu"], self.configure_server)
+        config_menu.addAction(self.trans["server_config_menu"], self.create_server_config_widget)
         config_menu.addAction(self.trans["theme_menu"], self.choose_theme)
         config_menu.addSeparator()
         config_menu.addAction(self.trans["language_menu"], self.choose_language)
 
         # Menú acerca de
         about_menu = menubar.addMenu(self.trans["about_menu"])
-        about_action = about_menu.addAction(self.trans["about_menu"], self.about_program)
-        update_action = about_menu.addAction("Buscar Actualizaciones", self.check_for_updates)
+        about_menu.addAction(self.trans["about_menu"], self.about_program)
+
+        # Añadir la opción para comprobar actualizaciones
+        check_update_action = about_menu.addAction(self.trans.get("check_for_updates", "Comprobar Actualizaciones"), self.check_for_updates)
 
         # Diseño principal
         main_layout = QHBoxLayout()
@@ -94,70 +85,50 @@ class ServerAdminApp(QMainWindow):
         main_layout.addLayout(button_layout)
         main_layout.addWidget(self.stack)
 
+        # Añadir una propiedad para el hilo de actualización
+        self.update_thread = None
+        self.progress_bar = None
+
     def check_for_updates(self):
-        try:
-            response = requests.get("https://github.com/Aosiika/Metin2_Server_Admin/raw/main/version.json")
-            if response.status_code == 200:
-                remote_version_info = response.json()
-                remote_version = remote_version_info["version"]
-                current_version = self.config.get("version", "1.0.0")
+        # Verificar si hay una actualización
+        update_url = self.config.get("update_url")
+        if not update_url:
+            QMessageBox.information(self, "Actualización", "No se encontró una URL de actualización.")
+            return
 
-                if remote_version > current_version:
-                    changelog = "\n".join(remote_version_info["changelog"])
-                    reply = QMessageBox.question(
-                        self, "Actualización disponible",
-                        f"Hay una nueva versión ({remote_version}) disponible con los siguientes cambios:\n\n{changelog}\n\n¿Quieres actualizar ahora?",
-                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-                    )
-                    if reply == QMessageBox.Yes:
-                        download_url = remote_version_info["download_url"]
-                        self.download_update_with_progress(download_url)
-                else:
-                    pass  # No hay actualizaciones
-            else:
-                QMessageBox.warning(self, "Error", "No se pudo comprobar la actualización. Intenta más tarde.")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Ocurrió un error al comprobar la actualización: {str(e)}")
+        reply = QMessageBox.question(self, "Nueva actualización", "Hay una nueva versión disponible. ¿Desea actualizar ahora?",
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.download_update(update_url)
 
-    def download_update_with_progress(self, download_url):
-        try:
-            # Crear un cuadro de progreso
-            progress = QProgressDialog("Descargando actualización...", "Cancelar", 0, 100, self)
-            progress.setWindowModality(QtCore.Qt.WindowModal)
-            progress.setValue(0)
+    def download_update(self, update_url):
+        # Iniciar el hilo de actualización
+        output_path = os.path.join(os.getcwd(), "metin2_admin_update.exe")
+        self.update_thread = UpdateThread(update_url, output_path)
+        self.update_thread.update_progress.connect(self.show_update_progress)
+        self.update_thread.update_complete.connect(self.on_update_complete)
+        self.update_thread.start()
 
-            def download():
-                try:
-                    response = requests.get(download_url, stream=True)
-                    total_size = int(response.headers.get('content-length', 0))
-                    chunk_size = 1024
-                    update_path = os.path.join(os.getcwd(), "Metin2_Server_Admin_update.exe")
+        # Crear una barra de progreso para mostrar el progreso de la descarga
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setGeometry(300, 300, 400, 30)
+        self.progress_bar.setMaximum(100)
+        self.progress_bar.show()
 
-                    downloaded = 0
-                    with open(update_path, "wb") as f:
-                        for chunk in response.iter_content(chunk_size=chunk_size):
-                            if chunk:
-                                f.write(chunk)
-                                downloaded += len(chunk)
-                                progress.setValue(int((downloaded / total_size) * 100))
-                                if progress.wasCanceled():
-                                    os.remove(update_path)
-                                    return
+    def show_update_progress(self, progress):
+        # Actualizar la barra de progreso
+        if self.progress_bar:
+            self.progress_bar.setValue(progress)
 
-                    # Confirmar al usuario que se descargó la actualización y se reiniciará
-                    QMessageBox.information(self, "Actualización descargada",
-                                            "La actualización se ha descargado. La aplicación se reiniciará para completar la actualización.")
-                    subprocess.Popen(update_path, shell=True)
-                    QApplication.quit()
+    def on_update_complete(self, success):
+        if self.progress_bar:
+            self.progress_bar.hide()
 
-                except Exception as e:
-                    QMessageBox.critical(self, "Error", f"Ocurrió un error durante la descarga de la actualización: {str(e)}")
-
-            # Ejecutar la descarga en un hilo separado para no bloquear la GUI
-            threading.Thread(target=download).start()
-
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Ocurrió un error al intentar iniciar la descarga: {str(e)}")
+        if success:
+            QMessageBox.information(self, "Actualización", "La actualización se ha descargado y aplicado exitosamente. Reinicie la aplicación.")
+            # Aquí podrías agregar la lógica para reemplazar el .exe actual y reiniciar el programa.
+        else:
+            QMessageBox.critical(self, "Error", "Ocurrió un error al intentar descargar la actualización.")
 
     def change_language(self, lang):
         self.config["language"] = lang
@@ -224,10 +195,7 @@ class ServerAdminApp(QMainWindow):
         self.accounts_table.setColumnCount(5)
         self.accounts_table.setHorizontalHeaderLabels(["ID", "Login", "Status", "Última Conexión", "Creado en"])
         self.accounts_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.accounts_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.accounts_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.accounts_table.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        group_box_layout.addWidget(self.accounts_table)
+        self.accounts_table.set
 
         # Botones para acciones
         buttons_layout = QHBoxLayout()
@@ -323,91 +291,4 @@ class ServerAdminApp(QMainWindow):
         return widget
 
     def display_widget(self, widget):
-        self.stack.setCurrentWidget(widget)
-
-    def show_accounts(self):
-        accounts, error = get_all_accounts()
-        if error:
-            QMessageBox.critical(self, "Error", error)
-        else:
-            self.accounts_table.setRowCount(len(accounts))
-            for row_idx, acc in enumerate(accounts):
-                self.accounts_table.setItem(row_idx, 0, QTableWidgetItem(str(acc['id'])))
-                self.accounts_table.setItem(row_idx, 1, QTableWidgetItem(acc['login']))
-                self.accounts_table.setItem(row_idx, 2, QTableWidgetItem(acc['status']))
-                self.accounts_table.setItem(row_idx, 3, QTableWidgetItem(str(acc['last_play'])))
-                self.accounts_table.setItem(row_idx, 4, QTableWidgetItem(str(acc['create_time'])))
-
-    def edit_account_status(self):
-        selected_row = self.accounts_table.currentRow()
-        if selected_row == -1:
-            QMessageBox.warning(self, "Advertencia", "Debe seleccionar una cuenta para editar su estado.")
-            return
-
-        account_id = self.accounts_table.item(selected_row, 0).text()
-        current_status = self.accounts_table.item(selected_row, 2).text()
-        new_status, ok = QInputDialog.getItem(self, "Editar Estado", "Seleccione el nuevo estado:", ["OK", "BLOCK"], 0, False)
-
-        if ok and new_status != current_status:
-            success = update_account_status(account_id, new_status)
-            if success:
-                QMessageBox.information(self, "Éxito", "Estado de la cuenta actualizado correctamente.")
-                self.show_accounts()
-            else:
-                QMessageBox.critical(self, "Error", "Error al actualizar el estado de la cuenta.")
-
-    def view_account_characters(self):
-        selected_row = self.accounts_table.currentRow()
-        if selected_row == -1:
-            QMessageBox.warning(self, "Advertencia", "Debe seleccionar una cuenta para ver sus personajes asociados.")
-            return
-
-        try:
-            account_id = self.accounts_table.item(selected_row, 0).text()
-            characters, error = get_all_characters(account_id)
-            if error:
-                QMessageBox.critical(self, "Error", error)
-            else:
-                if characters:
-                    characters_str = "\n".join([f"ID: {char.get('id', 'N/A')}, Nombre: {char.get('name', 'N/A')}, Nivel: {char.get('level', 'N/A')}" for char in characters])
-                    QMessageBox.information(self, "Personajes Asociados", characters_str)
-                else:
-                    QMessageBox.information(self, "Personajes Asociados", "No se encontraron personajes asociados a esta cuenta.")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Ocurrió un error inesperado: {str(e)}")
-
-    def create_new_account(self):
-        login = self.input_login.text()
-        password = self.input_password.text()
-        if login and password:
-            success = create_account(login, password)
-            if success:
-                QMessageBox.information(self, self.trans.get("create_account_title", "Crear Cuenta"), self.trans.get("create_account_success", "Cuenta creada exitosamente."))
-            else:
-                QMessageBox.critical(self, self.trans.get("create_account_title", "Crear Cuenta"), self.trans.get("create_account_error", "Error al crear la cuenta."))
-        else:
-            QMessageBox.warning(self, self.trans.get("create_account_title", "Crear Cuenta"), "Debe ingresar un login y una contraseña.")
-
-    def show_server_statistics(self):
-        stats, error = get_server_statistics()
-        if error:
-            QMessageBox.critical(self, "Error", self.trans.get("server_statistics_error", "Error al obtener las estadísticas del servidor: {error}").format(error=error))
-        else:
-            stats_str = self.trans.get("server_statistics_success", "Usuarios en línea: {online_users}, Total de personajes: {total_characters}").format(online_users=stats["online_users"], total_characters=stats["total_characters"])
-            self.statistics_label.setText(stats_str)
-
-    def save_server_config(self):
-        # Guardar la configuración del servidor
-        self.config["host"] = self.input_db_host.text()
-        self.config["user"] = self.input_db_user.text()
-        self.config["password"] = self.input_db_password.text()
-        self.config["port"] = int(self.input_db_port.text())
-        self.config["database"] = self.input_db_name.text()
-        save_server_config(self.config)
-        QMessageBox.information(self, self.trans.get("server_config_menu", "Configuración del Servidor"), "Configuración guardada exitosamente.")
-
-    def about_program(self):
-        QMessageBox.information(self, self.trans["about_menu"], "Administración del Servidor de Metin2 - Versión 1.0")
-
-    def configure_server(self):
-        self.display_widget(self.server_config_widget)
+        self.stack
