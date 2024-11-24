@@ -1,11 +1,11 @@
 {
-    "host": "62.169.26.208",
+    "host": "localhost",
     "port": 3306,
     "user": "root",
-    "password": "x#yhQh79v7NuvokG",
+    "password": "root",
     "database": "srv1_account",
     "theme": "light",
     "language": "es",
     "version": "1.1.0",
-    "update_url": "https://mega.nz/file/o4ZmxQYb#pjz8kR62BRC_kGwKKSo96tfMFKzhZwEo_T8DFy-ZRkA"
+    "update_url": "none"
 }
