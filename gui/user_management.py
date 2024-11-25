@@ -146,15 +146,57 @@ class UserManagementWidget(QWidget):
         self.accounts_table.viewport().update()
 
     def display_accounts(self, accounts):
-            self.accounts_table.setRowCount(len(accounts))
-            self.accounts_table.setColumnCount(4)
-            self.accounts_table.setHorizontalHeaderLabels(["ID de Cuenta", "Nombre", "Estado", "Fecha de Creación"])
-            for row_idx, account in enumerate(accounts):
-                self.accounts_table.setItem(row_idx, 0, QTableWidgetItem(str(account["id"])))
-                self.accounts_table.setItem(row_idx, 1, QTableWidgetItem(account["login"]))
-                self.accounts_table.setItem(row_idx, 2, QTableWidgetItem(account["status"]))
-                create_time_str = account["create_time"].strftime("%Y-%m-%d %H:%M:%S") if isinstance(account["create_time"], datetime) else "N/A"
-                self.accounts_table.setItem(row_idx, 3, QTableWidgetItem(create_time_str))
+        self.accounts_table.setRowCount(len(accounts))
+        self.accounts_table.setColumnCount(5)  # Añadir una columna para el botón "Aceptar"
+        self.accounts_table.setHorizontalHeaderLabels([
+            "ID de Cuenta", "Nombre", "Estado", "Fecha de Creación", "Actualizar Estado"
+        ])
+
+        # Ajustar el comportamiento de la tabla para que las celdas se adapten al contenido
+        self.accounts_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        self.accounts_table.horizontalHeader().setStretchLastSection(True)
+
+        # Establecer una altura fija para todas las filas
+        self.accounts_table.verticalHeader().setDefaultSectionSize(50)
+
+        for row_idx, account in enumerate(accounts):
+            # Añadir el ID de cuenta, nombre, estado y fecha de creación
+            self.accounts_table.setItem(row_idx, 0, QTableWidgetItem(str(account.get("id", ""))))
+            self.accounts_table.setItem(row_idx, 1, QTableWidgetItem(account.get("login", "")))
+            self.accounts_table.setItem(row_idx, 2, QTableWidgetItem(account.get("status", "OK")))
+
+            # Convertir create_time a cadena antes de asignarlo a la tabla
+            create_time = account.get("create_time", "")
+            if isinstance(create_time, datetime):
+                create_time = create_time.strftime("%Y-%m-%d %H:%M:%S")  # Convertir datetime a una cadena legible
+            self.accounts_table.setItem(row_idx, 3, QTableWidgetItem(str(create_time)))
+
+            # Añadir el botón y el desplegable para actualizar el estado
+            update_status_button = QPushButton("Aceptar")
+            update_status_button.setFixedSize(100, 40)  # Establecer un tamaño fijo para el botón
+
+            status_combobox = QComboBox()
+            status_combobox.addItems(["OK", "BLOCK"])
+            status_combobox.setFixedSize(100, 40)  # Establecer un tamaño fijo para el combo box
+
+            # Crear un layout horizontal para el control del estado
+            control_layout = QHBoxLayout()
+            control_layout.addWidget(update_status_button)
+            control_layout.addWidget(status_combobox)
+            control_layout.setContentsMargins(5, 5, 5, 5)  # Añadir márgenes para dar espacio alrededor
+            control_layout.setSpacing(10)  # Espaciado entre el botón y el combo box
+
+            # Crear un QWidget para contener el layout y añadirlo a la celda de la tabla
+            control_widget = QWidget()
+            control_widget.setLayout(control_layout)
+            self.accounts_table.setCellWidget(row_idx, 4, control_widget)
+
+            # Conectar la lógica del botón al método update_account_status
+            update_status_button.clicked.connect(lambda _, acc_id=account["id"], new_status=status_combobox:
+                                                self.update_account_status(acc_id, new_status.currentText()))
+
+        # Forzar el refresco de la tabla
+        self.accounts_table.viewport().update()
 
     def filter_accounts(self):
         """Filtra las cuentas según el término de búsqueda ingresado."""
