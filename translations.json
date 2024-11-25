@@ -1,6 +1,6 @@
 {
     "es": {
-        "app_title": "Administración del Servidor de Metin2",
+        "app_title": "Metin2 Server Tool V.1.0.0",
         "language_menu": "Idioma",
         "config_menu": "Configuración",
         "about_menu": "Acerca de",
@@ -60,7 +60,7 @@
         "unknown": "Desconocido"
     },
     "en": {
-        "app_title": "Metin2 Server Administration",
+        "app_title": "Metin2 Server Tool V.1.0.0",
         "language_menu": "Language",
         "config_menu": "Settings",
         "about_menu": "About",

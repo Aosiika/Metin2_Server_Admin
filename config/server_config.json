@@ -2,10 +2,10 @@
     "host": "localhost",
     "port": 3306,
     "user": "root",
-    "password": "root",
-    "database": "srv1_account",
+    "password": "admin",
+    "db_account_name": "srv1_account",
+    "db_common_name": "srv1_common",
+    "db_player_name": "srv1_player",
     "theme": "light",
-    "language": "es",
-    "version": "1.1.0",
-    "update_url": "none"
+    "language": "es"
 }

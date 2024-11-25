@@ -6,6 +6,7 @@ import qtawesome as qta
 from gui.statistics_dashboard import StatisticsDashboard
 from backend.server_config import load_server_config, save_server_config
 from backend.update_manager import UpdateThread  # Importar el módulo de actualización
+from backend.gm_manager import create_gm
 from gui.statistics_dashboard import StatisticsDashboard  # Asegúrate de importar StatisticsDashboard correctamente
 import json
 import os
@@ -45,7 +46,7 @@ class ServerAdminApp(QMainWindow):
         self.trans = self.translations[self.language]
         
         self.setWindowTitle(self.trans["app_title"])
-        self.setWindowIcon(QIcon("resources/logo.ico"))  # Añadir el ícono a la ventana
+        self.setWindowIcon(QIcon("resources/logo.ico")) 
         self.resize(1000, 600)
 
         self.is_dark_mode = self.config.get("theme", "light") == "dark"
@@ -158,7 +159,7 @@ class ServerAdminApp(QMainWindow):
             self.apply_theme()
 
     def choose_language(self):
-        lang, ok = QInputDialog.getItem(self, self.trans["language_menu"], "Seleccione el idioma:", ["es", "en"], 0, False)
+        lang, ok = QInputDialog.getItem(self, self.trans["language_menu"], "Seleccione el idioma:", ["ESPÑOL", "ENGLISH"], 0, False)
         if ok:
             self.change_language(lang)
 
@@ -184,6 +185,7 @@ class ServerAdminApp(QMainWindow):
     def show_server_config(self):
         from gui.server_config_gui import ServerConfigWidget
         widget = ServerConfigWidget(self.config)
+        widget.show()
         self.stack.addWidget(widget)
         self.stack.setCurrentWidget(widget)
 
@@ -194,7 +196,7 @@ class ServerAdminApp(QMainWindow):
         self.stack.setCurrentWidget(statistics_widget)
 
     def about_program(self):
-        QMessageBox.information(self, self.trans["about_menu"], "Administración del Servidor de Metin2 - Versión 1.0")
+        QMessageBox.information(self, self.trans["about_menu"], "Metin2 Server Tool - Versión 1.0.0")
         
 
     

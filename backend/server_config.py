@@ -21,7 +21,9 @@ def load_server_config():
             "port": 3306,             # Puerto de conexión (ej. para MySQL)
             "user": "admin",          # Usuario para la base de datos
             "password": "password",   # Contraseña de la base de datos
-            "database": "player",     # Base de datos del servidor de Metin2
+            "db_account_name": "account",  # Nombre de la base de datos de cuentas
+            "db_common_name": "common",    # Nombre de la base de datos común
+            "db_player_name": "player",    # Nombre de la base de datos de jugadores
             "theme": "light",         # Tema de la aplicación, 'light' o 'dark'
             "language": "es"          # Idioma de la aplicación, 'es' o 'en'
         }
@@ -33,4 +35,3 @@ def save_server_config(config):
             json.dump(config, f, indent=4)
     except Exception as e:
         print(f"Error al guardar el archivo de configuración: {e}")
-

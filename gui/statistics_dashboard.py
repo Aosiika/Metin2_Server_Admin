@@ -1,10 +1,12 @@
+# statistics_dashboard.py
 import pymysql
 import json
 import os
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QFormLayout, QLineEdit, QPushButton, QMessageBox, QLabel, QMainWindow
+
 
 CONFIG_FILE_PATH = os.path.join(os.path.dirname(__file__), '..', 'config', 'server_config.json')
 
@@ -37,11 +39,11 @@ def connect_to_database(db_name):
         return connection, None
     except Exception as e:
         return None, str(e)
-
+    
 def get_server_statistics():
     try:
-        connection_account, error_account = connect_to_database("srv1_account")
-        connection_player, error_player = connect_to_database("srv1_player")
+        connection_account, error_account = connect_to_database(load_db_config()["db_account_name"])
+        connection_player, error_player = connect_to_database(load_db_config()["db_player_name"])
 
         if error_account:
             return None, error_account
@@ -168,3 +170,88 @@ class StatisticsDashboard(QWidget):
         self.canvas_accounts.draw()
         self.canvas_characters.draw()
         self.canvas_active_players.draw()
+        
+    class ServerConfigWidget(QWidget):
+        def __init__(self):
+            super().__init__()
+            self.init_ui()
+
+        def init_ui(self):
+            self.setWindowTitle("Configuración del Servidor")
+            self.layout = QFormLayout()
+
+            # Campos para la configuración del servidor
+            self.host_input = QLineEdit()
+            self.port_input = QLineEdit()
+            self.user_input = QLineEdit()
+            self.password_input = QLineEdit()
+            self.db_account_name_input = QLineEdit()
+            self.db_common_name_input = QLineEdit()
+            self.db_player_name_input = QLineEdit()
+
+            # Botón para guardar la configuración
+            self.save_button = QPushButton("Guardar Configuración")
+            self.save_button.clicked.connect(self.save_config)
+
+            # Añadir campos al layout
+            self.layout.addRow("Host del Servidor", self.host_input)
+            self.layout.addRow("Puerto de BD", self.port_input)
+            self.layout.addRow("Usuario de BD", self.user_input)
+            self.layout.addRow("Contraseña de BD", self.password_input)
+            self.layout.addRow("Nombre de Base de Datos de Cuentas", self.db_account_name_input)
+            self.layout.addRow("Nombre de Base de Datos Común", self.db_common_name_input)
+            self.layout.addRow("Nombre de Base de Datos de Jugadores", self.db_player_name_input)
+            self.layout.addRow(self.save_button)
+
+            self.setLayout(self.layout)
+            self.load_config()
+
+        def load_config(self):
+            config = load_server_config()
+            if config:
+                self.host_input.setText(config.get("host", ""))
+                self.port_input.setText(str(config.get("port", "")))
+                self.user_input.setText(config.get("user", ""))
+                self.password_input.setText(config.get("password", ""))
+                self.db_account_name_input.setText(config.get("db_account_name", ""))
+                self.db_common_name_input.setText(config.get("db_common_name", ""))
+                self.db_player_name_input.setText(config.get("db_player_name", ""))
+
+        def save_config(self):
+            config = {
+                "host": self.host_input.text(),
+                "port": int(self.port_input.text()),
+                "user": self.user_input.text(),
+                "password": self.password_input.text(),
+                "db_account_name": self.db_account_name_input.text(),
+                "db_common_name": self.db_common_name_input.text(),
+                "db_player_name": self.db_player_name_input.text(),
+                "theme": "light",  # Este valor se puede ajustar según la aplicación
+                "language": "es"   # Este valor se puede ajustar según la aplicación
+            }
+            save_server_config(config)
+            QMessageBox.information(self, "Éxito", "Configuración guardada correctamente.")
+
+    class MainApp(QMainWindow):
+        def __init__(self):
+            super().__init__()
+            self.init_ui()
+
+        def init_ui(self):
+            self.setWindowTitle("Administración del Servidor de Metin2")
+            self.setGeometry(100, 100, 800, 600)
+
+            # Crear menú de configuración
+            menubar = self.menuBar()
+            config_menu = menubar.addMenu("Configuración")
+
+            # Acción de configuración del servidor
+            server_config_action = QAction("Configuración del Servidor", self)
+            server_config_action.triggered.connect(self.open_server_config)
+            config_menu.addAction(server_config_action)
+
+            # Otras acciones del menú...
+
+        def open_server_config(self):
+            self.server_config_widget = ServerConfigWidget()
+            self.server_config_widget.show()
