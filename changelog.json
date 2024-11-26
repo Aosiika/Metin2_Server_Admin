@@ -1,0 +1,22 @@
+{
+    "changelog": [
+        {
+            "version": "1.0.1",
+            "date": "2024-11-20",
+            "changes": [
+                "Corrección de errores en la interfaz de administración de cuentas.",
+                "Mejora en el rendimiento del sistema de búsquedas.",
+                "Añadida la funcionalidad de doble SHA1 en la creación de cuentas."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "date": "2024-10-31",
+            "changes": [
+                "Primera versión estable de la aplicación.",
+                "Añadida interfaz de gestión de usuarios.",
+                "Añadido sistema de logs para seguimiento de errores."
+            ]
+        }
+    ]
+}
