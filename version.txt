@@ -1,5 +1,5 @@
 {
     "version": "1.0.0",
-    "update_url": "https://raw.githubusercontent.com/Aosiika/Metin2_Server_Admin/main/metin2_admin_update.exe"
+    "update_url": "http://metin2servertool.free.nf/releases/dowland"
 }
 
