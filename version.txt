@@ -1,5 +1,5 @@
 {
     "version": "1.0.1",
-    "update_url": "http://metin2servertool.free.nf/releases/dowland"
+    "update_url": "http://metin2servertool.free.nf/releases/dowland/V1.0.1/Metin2ServerTool.exe"
 }
 
